@@ -84,7 +84,9 @@ def plane_clustering(pos_points, planes, iter_num=10):
                 continue
             X = group[:, :3]
             B = -group[:, 3:]
-            A = torch.gels(B, X)[0][:3]
+            A = torch.gels(B, X)[0][:3] if float(torch.__version__) < 1.2 else \
+                torch.lstsq(B, X)[0][:3]
+
             abs_residuals = torch.abs(torch.matmul(X, A) - B)
             abs_residual_scale = torch.median(abs_residuals)
             if abs_residual_scale > 1e-4:
@@ -94,7 +96,9 @@ def plane_clustering(pos_points, planes, iter_num=10):
                 X_weighted = X_weight * X
                 X = torch.matmul(X_weighted.t(), X)
                 B = torch.matmul(X_weighted.t(), B)
-                A = torch.gels(B, X)[0]
+                A = torch.gels(B, X)[0] if float(torch.__version__) < 1.2 else \
+                    torch.lstsq(B, X)[0]
+
             planes[:, i] = A.flatten()
     return planes
 
@@ -110,7 +114,9 @@ def get_intersection_of_plane(normal_vectors):
         param = normal_vectors[:, [i, (i + 1) % 4]]
         coefficient = param[:2].t()
         ordinate = -param[2]
-        points[i] = torch.gels(ordinate, coefficient)[0].squeeze()
+        points[i] = torch.gels(ordinate, coefficient)[0].squeeze() if float(torch.__version__) < 1.2 else \
+                    torch.lstsq(ordinate, coefficient)[0].squeeze()
+       
     return points
 
 
